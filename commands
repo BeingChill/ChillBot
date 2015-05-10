@@ -430,42 +430,37 @@ exports.commands = {
 		this.writeSettings();
 		this.say(room, 'Phrase \"' + arg + '\" is no longer banned.');
 	},
-	viewbannedphrases: 'viewbannedwords',
-	vbw: 'viewbannedwords',
-	viewbannedwords: function (arg, user, room) {
-		var tarRoom = room.id;
-		var text = '';
-		var bannedFrom = '';
-		if (room === user) {
-			if (!user.isExcepted) return false;
-			tarRoom = 'global';
-			bannedFrom += 'globally';
-		} else if (user.canUse('banword', room)) {
-			text += '/pm ' + user.id + ', ';
-			bannedFrom += 'in ' + room.id;
-		} else {
-			return false;
-		}
-
-		if (!this.settings.bannedphrases) return this.say(room, text + 'No phrases are banned in this room.');
-		var bannedPhrases = this.settings.bannedphrases[tarRoom];
-		if (!bannedPhrases) return this.say(room, text + 'No phrases are banned in this room.');
-
-		if (arg.length) {
-			text += 'The phrase "' + arg + '" is currently ' + (bannedPhrases[arg] || 'not ') + 'banned ' + bannedFrom + '.';
-			return this.say(room, text);
-		}
-
-		var banList = Object.keys(bannedPhrases);
-		if (!banList.length) return this.say(room, text + 'No phrases are banned in this room.');
-
-		this.uploadToHastebin('The following phrases are banned ' + bannedFrom + ':\n\n' + banList.join('\n'), function (link) {
-			if (!link.startsWith('Error')) text += 'Banned phrases ' + bannedFrom + ': ';
-			text += link;
-		}.bind(this));
-
-		this.say(room, text);
-	},
+viewbannedphrases: 'viewbannedwords',
+        vbw: 'viewbannedwords',
+        viewbannedwords: function (arg, by, room) {
+                if (!this.canUse('banword', room, by)) return false;
+                arg = arg.trim().toLowerCase();
+                var tarRoom = room;
+ 
+                if (room.charAt(0) === ',')  {
+                        if (!room === 'theinfernoleague')
+                        if (!this.hasRank(by, '#&@%+~')) return false;
+                        tarRoom = 'global';
+                }
+ 
+                var text = "";
+                if (!this.settings.bannedphrases || !this.settings.bannedphrases[tarRoom]) {
+                        text = "No phrases are banned in this room.";
+                } else {
+                        if (arg.length) {
+                                text = "The phrase \"" + arg + "\" is currently " + (arg in this.settings.bannedphrases[tarRoom] ? "" : "not ") + "banned " +
+                                        (room.charAt(0) === ',' ? "globally" : "in " + room) + ".";
+                        } else {
+                                var banList = Object.keys(this.settings.bannedphrases[tarRoom]);
+                                if (!banList.length) return this.say(room, "No phrases are banned in this room.");
+                                this.uploadToHastebin("The following phrases are banned " + (room.charAt(0) === ',' ? "globally" : "in " + room) + ":\n\n" + banList.join('\n'), function (link) {
+                                        this.say(room, (room.charAt(0) === '' ? "" : "") + "Banned Phrases " + (room.charAt(0) === ',' ? "globally" : "in " + room) + ": " + link);
+                                }.bind(this));
+                                return;
+                        }
+                }
+                this.say(room, text);
+        },
 
 	/**
 	 * General commands
